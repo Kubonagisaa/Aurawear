@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>Aura Wear - Premium Admin Console</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ================= KHU VỰC 1: BIẾN SỐ & RESET HỆ THỐNG ================= */
+        :root { 
+            --bg-color: #fcfbf9; 
+            --text-color: #1a1a1a; 
+            --border-color: #eeeeee;
+            --gray-text: #666; 
+            --success-color: #1e2c24; /* Xanh thẫm thương hiệu Aura */
+            --accent-color: #dcb38a;  /* Vàng đặc trưng Aura */
+            --danger-color: #d9534f;
+        }
+        
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+        }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            line-height: 1.5;
+            padding: 24px 16px;
+        }
+
+        .admin-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ================= KHU VỰC 2: TIÊU ĐỀ TRANG CƠ SỞ ================= */
+        .admin-header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .admin-header h1 {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .admin-header p {
+            font-size: 13px;
+            color: var(--gray-text);
+            margin-top: 4px;
+        }
+
+        .btn-back-home {
+            padding: 10px 20px;
+            background: var(--text-color);
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-back-home:hover { opacity: 0.9; }
+
+        /* ================= KHU VỰC 3: HOT BAR THỐNG KÊ (GRID CARDS) ================= */
+        .hotbar-container {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        @media (min-width: 576px) { .hotbar-container { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 992px) { .hotbar-container { grid-template-columns: repeat(4, 1fr); } }
+
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .stat-card .card-title {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray-text);
+            margin-bottom: 8px;
+        }
+
+        .stat-card .card-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-color);
+        }
+
+        .stat-card .card-footer-text {
+            font-size: 12px;
+            margin-top: 10px;
+            color: var(--gray-text);
+        }
+
+        .stat-card .trend-up { color: #2e7d32; font-weight: bold; }
+        .stat-card .trend-down { color: var(--danger-color); font-weight: bold; }
+
+        /* ================= KHU VỰC 4: BỐ CỤC KHU VỰC BIỂU ĐỒ & MONITOR ================= */
+        .main-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        @media (min-width: 992px) {
+            .main-dashboard-grid { grid-template-columns: 2fr 1fr; }
+        }
+
+        .dashboard-block {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .block-title {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            border-left: 3px solid var(--success-color);
+            padding-left: 10px;
+        }
+
+        .chart-container {
+            width: 100%;
+            position: relative;
+            height: 320px;
+        }
+
+        .monitor-status-box {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 10px 0;
+        }
+        .monitor-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 10px;
+            font-size: 13px;
+        }
+        .status-pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #2e7d32;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .btn-action-refresh {
+            width: 100%;
+            height: 48px;
+            background: var(--success-color);
+            color: #fff;
+            border: none;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-action-refresh:hover { background: #131c17; }
+
+        /* ================= KHU VỰC 5: BẢNG DỮ LIỆU TÀI CHÍNH CHI TIẾT ================= */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .data-table th, .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .data-table th {
+            background: #fdfcfb;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            color: var(--gray-text);
+        }
+
+        .data-table tr:hover { background: #faf9f6; }
+
+        .badge-profit { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; font-weight: bold; font-size: 11px; }
+        .badge-loss { background: #ffebee; color: var(--danger-color); padding: 4px 8px; font-weight: bold; font-size: 11px; }
+        
+        .form-group {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            font-size: 14px;
+            background: #fff;
+            outline: none;
+            border-radius: 0px;
+        }
+        .form-group input:focus { border-color: var(--text-color); }
+
+        /* Nút hành động nhỏ trong bảng */
+        .btn-mini {
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            margin-right: 4px;
+        }
+        .btn-mini-save { background: var(--success-color); color: white; }
+        .btn-mini-delete { background: var(--danger-color); color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-wrapper">
+        
+        <div class="admin-header">
+            <div>
+                <h1>Aura Wear Admin Control Panel</h1>
+                <p>Hệ thống kết nối trực tiếp cơ sở dữ liệu toán và phân tích lượng hàng hóa thời gian thực</p>
+            </div>
+            <a href="./index.html" class="btn-back-home">Quay lại Sàn</a>
+        </div>
+
+        <div class="hotbar-container">
+            <div class="stat-card">
+                <div class="card-title">Ước tính Lời/Lỗ (Tháng)</div>
+                <div class="card-value" id="hb-profit-value">0đ</div>
+                <div class="card-footer-text">Đồng bộ tự động dữ liệu đám mây <span class="trend-up">Live</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="card-title">Tổng người đăng ký</div>
+                <div class="card-value" id="hb-total-users">0 TV</div>
+                <div class="card-footer-text">Dữ liệu thành viên thực tế từ bảng users</div>
+            </div>
+            <div class="stat-card">
+                <div class="card-title">Đăng nhập hằng ngày</div>
+                <div class="card-value" id="hb-daily-logins">0 Active</div>
+                <div class="card-footer-text">Lượng tài khoản tương tác trong hôm nay</div>
+            </div>
+            <div class="stat-card">
+                <div class="card-title">Sản phẩm đã bán</div>
+                <div class="card-value" id="hb-items-sold">0 Items</div>
+                <div class="card-footer-text">Tính theo số lượng giỏ hàng thực tế</div>
+            </div>
+        </div>
+
+        <div class="main-dashboard-grid">
+            
+            <div class="dashboard-block">
+                <div class="block-title">Biểu đồ tổng hợp lợi nhuận & sản phẩm đã bán (VND / Cái)</div>
+                <div class="chart-container">
+                    <canvas id="financialChart"></canvas>
+                </div>
+            </div>
+
+            <div class="dashboard-block">
+                <div class="block-title">Trạng thái đồng bộ tự động</div>
+                <div class="monitor-status-box">
+                    <div class="monitor-row">
+                        <span>Phương thức kết nối:</span>
+                        <strong style="color:#2e7d32;"><span class="status-pulse"></span>Firestore Live Stream</strong>
+                    </div>
+                    <div class="monitor-row">
+                        <span>Cơ chế kế toán:</span>
+                        <strong>Chi phí mặc định = Vốn 55%</strong>
+                    </div>
+                    <div class="monitor-row">
+                        <span>Độ trễ đồng bộ:</span>
+                        <strong style="color: var(--gray-text);">Thời gian thực (0.1s)</strong>
+                    </div>
+                    <button class="btn-action-refresh" onclick="loadLiveFinancialData()">Làm mới luồng dữ liệu</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="dashboard-block">
+            <div class="block-title">Quản lý duyệt đơn hàng phát sinh (Màu sắc, kích cỡ & địa chỉ nhận)</div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Khách hàng</th>
+                            <th>Chi tiết sản phẩm mua</th>
+                            <th>Tổng tiền</th>
+                            <th>Địa chỉ nhận hàng</th>
+                            <th>Trạng thái đơn</th>
+                            <th style="width: 180px; text-align: center;">Duyệt đơn</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-management-table-body">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--gray-text);">Đang tải danh sách kiểm duyệt đơn hàng...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="dashboard-block">
+            <div class="block-title">Quản lý thêm phân loại Style mới (Tự động đồng bộ lên hệ thống)</div>
+            <form id="category-upload-form" onsubmit="handlePublishCategory(event)" style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1; min-width: 220px; margin-bottom: 0;">
+                    <label for="new-category-name">Tên Style mới muốn thêm</label>
+                    <input type="text" id="new-category-name" placeholder="Ví dụ: T-Shirt, Hoodie, Sportswear..." required>
+                </div>
+                <div class="form-group" style="flex: 2; min-width: 280px; margin-bottom: 0;">
+                    <label for="new-category-img">Đường dẫn ảnh đại diện Style</label>
+                    <input type="text" id="new-category-img" placeholder="Ví dụ: ./img/tên_file.png" required>
+                </div>
+                <button type="submit" style="background: var(--text-color); color: #ffffff; padding: 0 24px; height: 48px; border: none; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">Thêm Style Vào Hệ Thống</button>
+            </form>
+            
+            <div id="category-list-container" style="margin-top: 24px; border-top: 1px dashed var(--border-color); padding-top: 16px;">
+                <label style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 12px; color: var(--gray-text);">Danh sách Style hiện tại trên hệ thống (Bấm nút Xóa để gỡ)</label>
+                <div id="live-categories-list" style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    </div>
+            </div>
+        </div>
+
+        <div class="main-dashboard-grid" style="grid-template-columns: 1fr;">
+            <div class="dashboard-block">
+                <div class="block-title">Đăng quần áo, phong cách mới lên trang chủ</div>
+                <form id="product-upload-form" onsubmit="handlePublishProduct(event)">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                        <div class="form-group">
+                            <label for="prod-name">Tên sản phẩm quần áo</label>
+                            <input type="text" id="prod-name" placeholder="Ví dụ: Oversized Sweater" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-price">Giá bán gốc phát sinh (VND)</label>
+                            <input type="number" id="prod-price" placeholder="Ví dụ: 1490000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-stock">Số lượng nhập kho ban đầu</label>
+                            <input type="number" id="prod-stock" placeholder="Ví dụ: 100" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-sizes">Cấu hình danh sách Size (Dấu phẩy ngăn cách)</label>
+                            <input type="text" id="prod-sizes" placeholder="Ví dụ: S, M, L, XL" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-category">Phân loại Phong cách (Style)</label>
+                            <select id="prod-category" required>
+                                <option value="">Đang tải danh mục từ Đám Mây...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 24px;">
+                        <label style="margin-bottom: 8px; display: block;">Cấu hình danh sách Màu sắc & Hình ảnh tương ứng</label>
+                        <div id="color-images-container">
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;" class="color-img-row">
+                                <input type="text" placeholder="Tên màu (Ví dụ: Đen)" class="prod-color-input" required style="flex: 1; border: 1px solid var(--border-color); padding: 12px; font-size: 14px; outline: none;">
+                                <input type="text" placeholder="Đường dẫn ảnh (Ví dụ: ./img/sweater(black).png)" class="prod-img-input" required style="flex: 2; border: 1px solid var(--border-color); padding: 12px; font-size: 14px; outline: none;">
+                            </div>
+                        </div>
+                        <button type="button" onclick="addColorImageRow()" style="padding: 10px 20px; background: #eaeaea; border: 1px solid var(--border-color); font-size: 11px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; width: fit-content; margin-top: 4px;">+ Thêm màu & ảnh</button>
+                    </div>
+
+                    <button type="submit" class="btn-action-submit" style="background: var(--text-color); color: #ffffff; width: 100%; height: 48px; border: none; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">Đăng tải quần áo lên hệ thống đám mây</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="dashboard-block">
+            <div class="block-title">Tổng hợp quản lý quần áo của Shop</div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tên sản phẩm</th>
+                            <th>Giá bán</th>
+                            <th>Danh sách Size</th>
+                            <th>Danh sách Màu</th>
+                            <th style="width: 150px; text-align: center;">Số lượng tồn kho</th>
+                            <th style="width: 180px; text-align: center;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-management-table-body">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--gray-text);">Đang tải danh sách sản phẩm...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="dashboard-block">
+            <div class="block-title">Nhật ký tài chính sàn Aura Wear công khai</div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ngày báo cáo</th>
+                            <th>Doanh thu phát sinh</th>
+                            <th>Chi phí kho bãi / Vận chuyển</th>
+                            <th>Lợi nhuận ròng</th>
+                            <th>Trạng thái kế toán</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Cấu hình kết nối đồng bộ cơ sở dữ liệu Firebase Firestore của bạn
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGinRMz19O-W_Eij9ysWp-F-RZLHENSP8",
+            authDomain: "aura-wear-2e12b.firebaseapp.com",
+            projectId: "aura-wear-2e12b",
+            storageBucket: "aura-wear-2e12b.firebasestorage.app",
+            messagingSenderId: "912198846142",
+            appId: "1:912198846142:web:2a0363a53ef620d35940ef"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        let myChart = null;
+
+        // HÀM BỔ SUNG: CHẠY SỐ TIỀN TỪ TỪ LÊN ĐÚNG SỐ (ROLLING METRIC ANIMATION)
+        function animateMetricValue(id, endValue, suffix = '') {
+            const obj = document.getElementById(id);
+            if (!obj) return;
+            const duration = 1200; 
+            const startTimestamp = performance.now();
+            
+            function step(now) {
+                const progress = Math.min((now - startTimestamp) / duration, 1);
+                const easeOutQuad = progress * (2 - progress);
+                const current = Math.floor(easeOutQuad * endValue);
+                
+                if (suffix === 'đ') {
+                    obj.innerText = (current >= 0 ? '+' : '') + current.toLocaleString('vi-VN') + suffix;
+                } else {
+                    obj.innerText = current.toLocaleString('vi-VN') + suffix;
+                }
+                if (progress < 1) { window.requestAnimationFrame(step); }
+            }
+            window.requestAnimationFrame(step);
+        }
+
+        // Hàm hỗ trợ Admin thêm các dòng nhập Màu và Ảnh động
+        function addColorImageRow() {
+            const container = document.getElementById('color-images-container');
+            const row = document.createElement('div');
+            row.style = "display: flex; gap: 10px; margin-bottom: 10px;";
+            row.className = "color-img-row";
+            row.innerHTML = `
+                <input type="text" placeholder="Tên màu" class="prod-color-input" required style="flex: 1; border: 1px solid var(--border-color); padding: 12px; font-size: 14px; outline: none; background: #fff;">
+                <input type="text" placeholder="Đường dẫn ảnh" class="prod-img-input" required style="flex: 2; border: 1px solid var(--border-color); padding: 12px; font-size: 14px; outline: none; background: #fff;">
+                <button type="button" onclick="this.parentElement.remove()" style="background: var(--danger-color); color: white; border: none; padding: 0 16px; cursor: pointer; font-weight: bold; font-size: 12px;">Xóa</button>
+            `;
+            container.appendChild(row);
+        }
+
+        // HÀM KÉO DANH MỤC STYLE ĐỘNG TỪ FIREBASE ĐỔ VÀO DROPDOWN SELECT VÀO DANH SÁCH QUẢN LÝ XÓA ĐỘNG
+        async function loadLiveCategories() {
+            const selectEl = document.getElementById('prod-category');
+            const listEl = document.getElementById('live-categories-list');
+            if (!selectEl) return;
+            try {
+                const snapshot = await db.collection('categories').orderBy('createdAt', 'asc').get();
+                
+                // Nếu collection trống hoàn toàn (lần đầu chạy), tự tạo 4 nhóm mặc định kèm link hình ảnh gốc
+                if (snapshot.empty) {
+                    const defaultStyles = ["Knitwear", "Denim", "Coats & Jackets", "Accessories"];
+                    const defaultImages = [
+                        "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=500&auto=format&fit=crop",
+                        "https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=500&auto=format&fit=crop",
+                        "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1920&auto=format&fit=crop",
+                        "https://images.unsplash.com/photo-1509319117193-57bab727e09d?q=80&w=500&auto=format&fit=crop"
+                    ];
+                    for (let i = 0; i < defaultStyles.length; i++) {
+                        await db.collection('categories').add({ 
+                            name: defaultStyles[i], 
+                            img: defaultImages[i],
+                            createdAt: new Date() 
+                        });
+                    }
+                    loadLiveCategories();
+                    return;
+                }
+                
+                let htmlOptions = '';
+                let htmlList = '';
+                snapshot.forEach(doc => {
+                    const cat = doc.data();
+                    htmlOptions += `<option value="${cat.name}">${cat.name}</option>`;
+                    
+                    // Tạo giao diện khối phần tử danh mục kèm nút hành động gỡ bỏ trực tiếp
+                    htmlList += `
+                        <div style="display: flex; align-items: center; background: #ffffff; border: 1px solid var(--border-color); padding: 8px 14px; gap: 12px; font-size: 13px;">
+                            <span><strong>${cat.name}</strong></span>
+                            <button type="button" onclick="deleteCategoryFromSystem('${doc.id}', '${cat.name}')" style="background: var(--danger-color); color: #ffffff; border: none; padding: 4px 8px; font-size: 11px; cursor: pointer; font-weight: bold; text-transform: uppercase;">Xóa</button>
+                        </div>
+                    `;
+                });
+                selectEl.innerHTML = htmlOptions;
+                if (listEl) { listEl.innerHTML = htmlList; }
+            } catch (error) {
+                console.error("Lỗi đồng bộ danh mục Style:", error);
+            }
+        }
+
+        // HÀM BỔ SUNG CHỨC NĂNG: GỠ BỎ STYLE VĨNH VIỄN KHỎI CƠ SỞ DỮ LIỆU ĐÁM MÂY KHÔNG CẦN MÒ VÀO CODE
+        async function deleteCategoryFromSystem(catId, catName) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn phân loại Style "${catName}" khỏi sàn Aura Wear không?\n(Lưu ý: Các sản phẩm thuộc Style này trên trang chủ sẽ mất nhóm hiển thị)`)) {
+                return;
+            }
+            try {
+                await db.collection('categories').doc(catId).delete();
+                alert(`Đã gỡ bỏ thành công phân loại Style [${catName}] khỏi hệ thống.`);
+                loadLiveCategories(); // Làm mới tức thì dropdown select và panel quản lý tag
+            } catch (error) {
+                alert("Không thể xóa danh mục phân loại vào lúc này do sự cố đám mây.");
+            }
+        }
+
+        // HÀM XỬ LÝ KHI THÊM STYLE MỚI KÈM LINK HÌNH ẢNH LÊN FIREBASE CLOUD
+        async function handlePublishCategory(event) {
+            event.preventDefault();
+            const inputEl = document.getElementById('new-category-name');
+            const inputImgEl = document.getElementById('new-category-img');
+            
+            const styleName = inputEl.value.trim();
+            const styleImg = inputImgEl.value.trim();
+            
+            if (!styleName || !styleImg) return;
+
+            try {
+                const checkDuplicate = await db.collection('categories').where('name', '==', styleName).get();
+                if (!checkDuplicate.empty) {
+                    alert("Tên Style phân loại này đã tồn tại trên cơ sở dữ liệu!");
+                    return;
+                }
+
+                await db.collection('categories').add({
+                    name: styleName,
+                    img: styleImg,
+                    createdAt: new Date()
+                });
+
+                inputEl.value = '';
+                inputImgEl.value = '';
+                alert(`Đã lưu và đồng bộ thành công Style mới: [${styleName}] kèm hình ảnh giao diện.`);
+                loadLiveCategories();
+            } catch (error) {
+                alert("Không thể kết nối cơ sở dữ liệu đám mây để lưu Style.");
+            }
+        }
+
+        // TỰ ĐỘNG HÓA 100%: Quét dữ liệu tài chính thực tế từ đơn hàng đạt trạng thái "Đang tiến hành"
+        async function loadLiveFinancialData() {
+            const labels = [];
+            const dateKeys = []; 
+            
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                labels.push(i === 0 ? 'Hôm nay' : `${day}/${month}`);
+                dateKeys.push(`${day}/${month}`);
+            }
+
+            const revenueData = [0, 0, 0, 0, 0, 0];
+            const costsData = [0, 0, 0, 0, 0, 0];
+            const itemsSoldData = [0, 0, 0, 0, 0, 0];
+
+            try {
+                const snapshot = await db.collection('orders').where('status', '==', 'Đang tiến hành').get();
+                let totalItemsSold = 0;
+                let totalProfit = 0;
+
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    const itemRevenue = parseInt(order.totalAmount) || 0;
+                    
+                    let qtyInOrder = 0;
+                    if (order.items) {
+                        order.items.forEach(it => { qtyInOrder += (parseInt(it.quantity) || 1); });
+                    }
+                    totalItemsSold += qtyInOrder;
+
+                    const createdAt = order.createdAt ? order.createdAt.toDate() : new Date();
+                    const day = String(createdAt.getDate()).padStart(2, '0');
+                    const month = String(createdAt.getMonth() + 1).padStart(2, '0');
+                    const itemDateKey = `${day}/${month}`;
+
+                    const dayIndex = dateKeys.indexOf(itemDateKey);
+                    if (dayIndex !== -1) {
+                        revenueData[dayIndex] += itemRevenue;
+                        costsData[dayIndex] += Math.round(itemRevenue * 0.55);
+                        itemsSoldData[dayIndex] += qtyInOrder;
+                    }
+                });
+
+                const profitData = revenueData.map((rev, index) => {
+                    const net = rev - costsData[index];
+                    totalProfit += net;
+                    return net;
+                });
+
+                animateMetricValue('hb-profit-value', totalProfit, 'đ');
+                animateMetricValue('hb-items-sold', totalItemsSold, ' Items');
+
+                renderChartInstance(labels, profitData, itemsSoldData);
+                renderLiveTable(labels, revenueData, costsData);
+
+            } catch (error) {
+                console.error("Lỗi đồng bộ luồng tính toán tài chính:", error);
+            }
+        }
+
+        // TẢI VÀ ĐỒNG BỘ HOÀN TOÀN TRỪ TỒN KHO THỰC TẾ TỪ CÁC ĐƠN HÀNG THÀNH CÔNG KHÔNG BỊ PHỤ THUỘC CARTS
+        async function loadLiveProductsManagement() {
+            const tbody = document.getElementById('product-management-table-body');
+            if (!tbody) return;
+
+            try {
+                const orderSnapshot = await db.collection('orders').where('status', '==', 'Đang tiến hành').get();
+                const soldMap = {};
+                orderSnapshot.forEach(doc => {
+                    const order = doc.data();
+                    if (order.items) {
+                        order.items.forEach(item => {
+                            const nameKey = item.name.trim().toLowerCase();
+                            const qty = parseInt(item.quantity) || 1;
+                            soldMap[nameKey] = (soldMap[nameKey] || 0) + qty;
+                        });
+                    }
+                });
+
+                const snapshot = await db.collection('products').orderBy('createdAt', 'desc').get();
+                if (snapshot.empty) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--gray-text);">Không có sản phẩm nào trong cửa hàng.</td></tr>`;
+                    return;
+                }
+
+                let htmlContent = '';
+                snapshot.forEach(doc => {
+                    const prod = doc.data();
+                    const sizesStr = prod.sizes ? prod.sizes.join(', ') : 'L';
+                    const colorsStr = prod.variants ? prod.variants.map(v => v.color).join(', ') : 'Đen';
+                    
+                    const initialStock = prod.stock !== undefined ? prod.stock : 0;
+                    const totalSold = soldMap[prod.name.trim().toLowerCase()] || 0;
+                    const currentStock = Math.max(0, initialStock - totalSold);
+
+                    htmlContent += `
+                        <tr id="prod-row-${doc.id}">
+                            <td><strong>${prod.name}</strong></td>
+                            <td>${parseInt(prod.price).toLocaleString('vi-VN')} VND</td>
+                            <td>${sizesStr}</td>
+                            <td>${colorsStr}</td>
+                            <td style="text-align: center;">
+                                <input type="number" value="${currentStock}" id="input-stock-${doc.id}" style="width: 80px; padding: 6px; text-align: center; border: 1px solid var(--border-color); outline: none;">
+                            </td>
+                            <td style="text-align: center;">
+                                <button class="btn-mini btn-mini-save" onclick="updateProductStock('${doc.id}')">Lưu kho</button>
+                                <button class="btn-mini btn-mini-delete" onclick="deleteProductFromShop('${doc.id}', '${prod.name}')">Xóa Sàn</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = htmlContent;
+
+            } catch (error) {
+                console.error("Lỗi đồng bộ danh sách quản lý sản phẩm:", error);
+            }
+        }
+
+        // KHỐI HÀM MỚI BỔ SUNG: TẢI VÀ QUẢN LÝ KIỂM DUYỆT ĐƠN HÀNG PHÁT SINH KÈM ĐỊA CHỈ, PHỐI MÀU, SIZE
+        async function loadLiveOrdersManagement() {
+            const tbody = document.getElementById('order-management-table-body');
+            if (!tbody) return;
+
+            try {
+                const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
+                if (snapshot.empty) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--gray-text);">Hiện tại không có đơn hàng nào phát sinh.</td></tr>`;
+                    return;
+                }
+
+                let htmlContent = '';
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    let itemsDetailHtml = '';
+                    if (order.items) {
+                        order.items.forEach(it => {
+                            itemsDetailHtml += `<div>• ${it.name} [Màu: ${it.color || 'Mặc định'} | Size: ${it.size || 'L'}] x${it.quantity}</div>`;
+                        });
+                    }
+
+                    let actionButtonsHtml = '';
+                    if (order.status === "Chờ duyệt") {
+                        actionButtonsHtml = `
+                            <button class="btn-mini btn-mini-save" onclick="processOrderDecision('${doc.id}', 'approve')">Nhận đơn</button>
+                            <button class="btn-mini btn-mini-delete" onclick="processOrderDecision('${doc.id}', 'reject')">Từ chối</button>
+                        `;
+                    } else if (order.status === "Đang tiến hành") {
+                        actionButtonsHtml = `<span style="color:#2e7d32; font-weight:bold; font-size:11px;">ĐANG TIẾN HÀNH</span>`;
+                    } else {
+                        actionButtonsHtml = `<span style="color:var(--gray-text); font-size:11px;">ĐÃ TỪ CHỐI</span>`;
+                    }
+
+                    htmlContent += `
+                        <tr>
+                            <td>${order.userEmail}</td>
+                            <td>${itemsDetailHtml}</td>
+                            <td><strong>${parseInt(order.totalAmount).toLocaleString('vi-VN')} VND</strong></td>
+                            <td>${order.address || 'Chưa cập nhật địa chỉ'}</td>
+                            <td><span style="font-weight:bold; color:${order.status === 'Đang tiến hành' ? '#2e7d32' : (order.status === 'Từ chối' ? '#d9534f' : '#dcb38a')}">${order.status}</span></td>
+                            <td style="text-align: center;">${actionButtonsHtml}</td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = htmlContent;
+            } catch (error) {
+                console.error("Lỗi đồng bộ danh sách đơn hàng:", error);
+            }
+        }
+
+        async function processOrderDecision(orderId, action) {
+            try {
+                if (action === 'approve') {
+                    await db.collection('orders').doc(orderId).update({ status: "Đang tiến hành" });
+                    alert("Đã tiếp nhận đơn hàng thành công!");
+                } else {
+                    await db.collection('orders').doc(orderId).update({ status: "Từ chối" });
+                    alert("Đã từ chối đơn hàng thành công.");
+                }
+                loadLiveFinancialData();
+                loadLiveProductsManagement();
+                loadLiveOrdersManagement();
+            } catch (error) {
+                console.error("Lỗi xử lý duyệt đơn hàng:", error);
+            }
+        }
+
+        async function updateProductStock(prodId) {
+            const inputEl = document.getElementById(`input-stock-${prodId}`);
+            if (!inputEl) return;
+
+            const newStockInput = parseInt(inputEl.value);
+            if (isNaN(newStockInput) || newStockInput < 0) {
+                alert("Vui lòng nhập số lượng tồn kho hợp lệ."); return;
+            }
+
+            try {
+                const prodDoc = await db.collection('products').doc(prodId).get();
+                if (!prodDoc.exists) return;
+                const prodData = prodDoc.data();
+                
+                const orderSnapshot = await db.collection('orders').where('status', '==', 'Đang tiến hành').get();
+                let totalSold = 0;
+                orderSnapshot.forEach(doc => {
+                    const order = doc.data();
+                    if (order.items) {
+                        order.items.forEach(item => {
+                            if (item.name && item.name.trim().toLowerCase() === prodData.name.trim().toLowerCase()) {
+                                totalSold += (parseInt(item.quantity) || 1);
+                            }
+                        });
+                    }
+                });
+
+                await db.collection('products').doc(prodId).update({ stock: newStockInput + totalSold });
+                alert("Cập nhật số lượng tồn kho lên đám mây thành công!");
+                loadLiveProductsManagement();
+            } catch (error) { alert("Không thể lưu số lượng mới."); }
+        }
+
+        async function deleteProductFromShop(prodId, prodName) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn sản phẩm "${prodName}" khỏi Sàn Aura Wear không?`)) { return; }
+            try {
+                await db.collection('products').doc(prodId).delete();
+                alert(`Đã gỡ bỏ thành công sản phẩm "${prodName}" khỏi Sàn!`);
+                loadLiveProductsManagement();
+            } catch (error) { alert("Không thể xóa sản phẩm vào lúc này."); }
+        }
+
+        async function syncUserMetrics() {
+            try {
+                const userSnapshot = await db.collection('users').get();
+                const registeredUsersCount = userSnapshot.size;
+
+                let dailyActiveLogins = 0;
+                const activeEmails = new Set(); 
+                
+                const d = new Date();
+                const todayKey = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+                const orderSnapshot = await db.collection('orders').get();
+                orderSnapshot.forEach(doc => {
+                    const item = doc.data();
+                    if (item.userEmail && item.createdAt) {
+                        const createdAt = item.createdAt.toDate();
+                        const itemDay = String(createdAt.getDate()).padStart(2, '0');
+                        const itemMonth = String(createdAt.getMonth() + 1).padStart(2, '0');
+                        if (`${itemDay}/${itemMonth}` === todayKey) { activeEmails.add(item.userEmail); }
+                    }
+                });
+                
+                dailyActiveLogins = activeEmails.size;
+                if (localStorage.getItem('aura_current_user') && dailyActiveLogins === 0) { dailyActiveLogins = 1; }
+
+                animateMetricValue('hb-total-users', registeredUsersCount, ' TV');
+                animateMetricValue('hb-daily-logins', dailyActiveLogins, ' Active');
+
+            } catch (error) {
+                console.error("Lỗi đồng bộ thông số người dùng từ Firestore:", error);
+            }
+        }
+
+        function renderChartInstance(labels, profit, itemsSold) {
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            if (!ctx) return;
+            if (myChart !== null) { myChart.destroy(); }
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Lợi nhuận thực tế (VND)',
+                            data: profit,
+                            backgroundColor: '#1e2c24', 
+                            yAxisID: 'y',
+                            order: 2
+                        },
+                        {
+                            label: 'Số sản phẩm đã bán (Cái)',
+                            data: itemsSold,
+                            type: 'line',
+                            borderColor: '#dcb38a', 
+                            backgroundColor: '#dcb38a',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            fill: false,
+                            yAxisID: 'y1',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 12, family: 'Helvetica Neue' }, color: '#1a1a1a' } }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear', display: true, position: 'left',
+                            ticks: { color: '#1a1a1a', callback: function(value) { return value.toLocaleString() + ' đ'; } },
+                            grid: { color: '#eeeeee' }
+                        },
+                        y1: {
+                            type: 'linear', display: true, position: 'right',
+                            ticks: { color: '#1a1a1a', callback: function(value) { return value + ' cái'; } },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderLiveTable(labels, revenue, costs) {
+            const tbody = document.getElementById('audit-table-body');
+            if (!tbody) return; tbody.innerHTML = '';
+
+            for (let i = labels.length - 1; i >= 0; i--) {
+                const rev = revenue[i]; const cost = costs[i]; const net = rev - cost;
+                const statusBadge = net >= 0 ? '<span class="badge-profit">CÓ LÃI</span>' : '<span class="badge-loss">THÂM HỤT</span>';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${labels[i]}</strong></td>
+                    <td>${rev.toLocaleString()} VND</td>
+                    <td>${cost.toLocaleString()} VND</td>
+                    <td style="font-weight:bold; color:${net >= 0 ? '#2e7d32' : '#d9534f'}">${net >= 0 ? '+' : ''}${net.toLocaleString()} VND</td>
+                    <td>${statusBadge}</td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        async function handlePublishProduct(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('prod-name').value.trim();
+            const price = parseInt(document.getElementById('prod-price').value);
+            const stock = parseInt(document.getElementById('prod-stock').value);
+            const sizesRaw = document.getElementById('prod-sizes').value;
+            const sizes = sizesRaw.split(',').map(s => s.trim().toUpperCase()).filter(s => s !== "");
+            const category = document.getElementById('prod-category').value;
+
+            const colorRows = document.querySelectorAll('.color-img-row');
+            const variants = [];
+
+            colorRows.forEach(row => {
+                const colorVal = row.querySelector('.prod-color-input').value.trim();
+                const imgVal = row.querySelector('.prod-img-input').value.trim();
+                if (colorVal && imgVal) { variants.push({ color: colorVal, img: imgVal }); }
+            });
+
+            if (!name || isNaN(price) || isNaN(stock) || sizes.length === 0 || variants.length === 0 || !category) {
+                alert('Vui lòng nhập đầy đủ thông tin sản phẩm và cấu hình màu/ảnh hợp lệ.'); return;
+            }
+
+            try {
+                await db.collection('products').add({
+                    name: name, price: price, stock: stock, sizes: sizes, variants: variants, category: category, createdAt: new Date()
+                });
+
+                document.getElementById('product-upload-form').reset();
+                document.getElementById('color-images-container').innerHTML = `
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;" class="color-img-row">
+                        <input type="text" placeholder="Tên màu (Ví dụ: Đen)" class="prod-color-input" required style="flex: 1; border: 1px solid var(--border-color); padding: 12px; font-size: 14px; outline: none;">
+                        <input type="text" placeholder="Đường dẫn ảnh (Ví dụ: ./img/sweater(black).png)" class="prod-img-input" required style="flex: 2; border: 1px solid var(--border-color); padding: 12px; font-size: 14px; outline: none;">
+                    </div>
+                `;
+                alert(`Đăng tải sản phẩm động "${name}" thuộc nhóm [${category}] lên sàn Aura Wear thành công!`);
+                loadLiveFinancialData(); loadLiveProductsManagement();
+            } catch (error) { alert('Đã xảy ra sự cố kết nối dữ liệu đám mây.'); }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLiveFinancialData();
+            loadLiveProductsManagement();
+            loadLiveOrdersManagement();
+            syncUserMetrics();
+            loadLiveCategories();
+        });
+    </script>
+</body>
+</html>

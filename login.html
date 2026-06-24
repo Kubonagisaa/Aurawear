@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>Aura Wear - Premium Fashion - Login</title>
+    <style>
+        /* ================= KHU VỰC 1: BIẾN SỐ & RESET HỆ THỐNG PHÒNG THỦ ================= */
+        :root { 
+            --bg-color: #fcfbf9; 
+            --text-color: #1a1a1a; 
+            --border-color: #eeeeee; 
+            --gray-text: #666; 
+        }
+        
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+        }
+        
+        html, body { 
+            width: 100%; 
+            height: 100%; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            -webkit-text-size-adjust: 100%; 
+        }
+
+        /* ================= KHU VỰC 2: TỐI ƯU CẤU TRÚC CHUYỂN ĐỘNG PHẦN CỨNG GIA TỐC ================= */
+        .animate-up {
+            opacity: 0; 
+            transform: translateY(20px); 
+            animation: slideUpSpring 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            will-change: transform, opacity;
+        }
+
+        @keyframes slideUpSpring { 
+            0% { opacity: 0; transform: translateY(20px); } 
+            100% { opacity: 1; transform: translateY(0); } 
+        }
+
+        .delay-1 { animation-delay: 0.08s; } 
+        .delay-2 { animation-delay: 0.14s; }
+        .delay-3 { animation-delay: 0.20s; }
+        .delay-4 { animation-delay: 0.26s; }
+        .delay-5 { animation-delay: 0.32s; }
+
+        /* ================= KHU VỰC 3: THÔNG BÁO TOAST UI RIÊNG KHÔI PHỤC NGUYÊN VẸN ================= */
+        #custom-toast {
+            position: fixed; 
+            top: 20px; 
+            right: -100%; 
+            width: 300px;
+            padding: 16px 20px; 
+            background: #333; 
+            color: #fff;
+            font-size: 14px; 
+            font-weight: bold; 
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            z-index: 10000;
+            transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+        }
+        #custom-toast.show { right: 20px; }
+        #custom-toast.success { background: #1e2c24; border-left: 5px solid #dcb38a; }
+        #custom-toast.error { background: #d32f2f; border-left: 5px solid #ff9e9e; }
+
+        /* ================= KHU VỰC 4: KHUNG GIAO DIỆN ĐĂNG NHẬP CHÍNH ================= */
+        .auth-container { 
+            width: 100%; 
+            max-width: 400px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            height: 100%; 
+        }
+        
+        .auth-header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+        
+        .auth-header h1 { 
+            font-size: 24px; 
+            font-weight: 900; 
+            letter-spacing: 2px; 
+            margin-bottom: 8px; 
+        }
+        
+        .auth-header p { 
+            font-size: 14px; 
+            color: var(--gray-text); 
+        }
+        
+        .auth-form { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+        }
+        
+        .input-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+        }
+        
+        .input-group label { 
+            font-size: 12px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
+        
+        .input-group input { 
+            width: 100%; 
+            height: 50px; 
+            padding: 0 16px; 
+            border: 1px solid var(--border-color); 
+            background: #fff; 
+            outline: none; 
+            font-size: 14px; 
+        }
+        
+        .input-group input:focus { 
+            border-color: var(--text-color); 
+        }
+        
+        .submit-btn { 
+            width: 100%; 
+            height: 52px; 
+            background: var(--text-color); 
+            color: #fff; 
+            border: none; 
+            font-size: 14px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+            cursor: pointer; 
+            margin-top: 4px; 
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--gray-text);
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+
+        .social-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .social-btn {
+            width: 100%;
+            height: 48px;
+            border: 1px solid var(--border-color);
+            background: #ffffff;
+            color: var(--text-color);
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .social-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        .social-btn.fb {
+            border-color: #1877f2;
+            color: #1877f2;
+        }
+        
+        .auth-footer { 
+            text-align: center; 
+            margin-top: 25px; 
+            font-size: 14px; 
+            color: var(--gray-text); 
+        }
+        
+        .auth-footer a { 
+            color: var(--text-color); 
+            font-weight: bold; 
+            text-decoration: underline; 
+            cursor: pointer;
+        }
+        
+        .back-home { 
+            text-align: center; 
+            margin-top: 20px; 
+            font-size: 13px; 
+        }
+        
+        .back-home a { 
+            color: var(--gray-text); 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            cursor: pointer;
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+    <div id="custom-toast">
+        <span id="toast-icon">ℹ️</span>
+        <span id="toast-msg"></span>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-header animate-up">
+            <h1>AURA WEAR</h1>
+            <p>Đăng nhập tài khoản của bạn</p>
+        </div>
+
+        <form class="auth-form" onsubmit="handleLogin(event)">
+            <div class="input-group animate-up delay-1">
+                <label for="email">Email</label>
+                <input type="email" id="email" required placeholder="Nhập email của bạn">
+            </div>
+            <div class="input-group animate-up delay-2">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" required placeholder="Nhập mật khẩu">
+            </div>
+            <button type="submit" class="submit-btn animate-up delay-3" id="btn-submit">Đăng Nhập</button>
+        </form>
+
+        <div class="divider animate-up delay-4">HOẶC TIẾP TỤC VỚI</div>
+
+        <div class="social-group animate-up delay-4">
+            <button class="social-btn" onclick="handleSocialAuth('google')">
+                <svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.315 2.1-2.39 6.165-6.887 6.165-3.87 0-7.035-3.21-7.035-7.155s3.165-7.155 7.035-7.155c2.205 0 3.735.915 4.575 1.725l3.24-3.12C17.955 2.145 15.345 1 12.24 1 6.045 1 12.24s5.045 11.24 11.24 11.24c6.465 0 10.77-4.545 10.77-10.95 0-.735-.075-1.305-.18-1.785H12.24z"/></svg>
+                Đăng nhập bằng Google
+            </button>
+            <button class="social-btn fb" onclick="handleSocialAuth('facebook')">
+                <svg viewBox="0 0 24 24"><path fill="#1877f2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.8 10.125 11.701v-8.278H7.078v-3.423h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83cc-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.423h-2.796v8.278C19.612 22.873 24 18.063 24 12.073z"/></svg>
+                Đăng nhập bằng Facebook
+            </button>
+        </div>
+
+        <div class="auth-footer animate-up delay-5">
+            Chưa có tài khoản? <a href="./register.html">Đăng ký ngay</a>
+        </div>
+        <div class="back-home animate-up delay-5">
+            <a href="./index.html">← Quay lại trang chủ</a>
+        </div>
+    </div>
+
+    <script>
+        // Khởi tạo hiển thị Toast thông báo lỗi/thành công công khai
+        function showToast(message, type) {
+            const toast = document.getElementById('custom-toast');
+            document.getElementById('toast-msg').innerText = message;
+            toast.className = ''; 
+            toast.classList.add(type, 'show');
+            document.getElementById('toast-icon').innerText = type === 'success' ? '✅' : '❌';
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // Thông số cấu hình cố định dự án của bạn
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGinRMz19O-W_Eij9ysWp-F-RZLHENSP8",
+            authDomain: "aura-wear-2e12b.firebaseapp.com",
+            projectId: "aura-wear-2e12b",
+            storageBucket: "aura-wear-2e12b.firebasestorage.app",
+            messagingSenderId: "912198846142",
+            appId: "1:912198846142:web:2a0363a53ef620d35940ef"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Xử lý đăng nhập email
+        function handleLogin(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            btn.innerText = "Đang xác thực...";
+            btn.disabled = true;
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    const userData = {
+                        name: user.displayName || "Thành viên mới",
+                        email: user.email
+                    };
+                    localStorage.setItem('aura_current_user', JSON.stringify(userData));
+                    showToast('Đăng nhập thành công!', 'success');
+                    setTimeout(() => { window.location.href = './index.html'; }, 400); 
+                })
+                .catch((error) => {
+                    btn.innerText = "Đăng Nhập";
+                    btn.disabled = false;
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                        showToast('Tài khoản hoặc Mật khẩu không chính xác!', 'error');
+                    } else {
+                        showToast('Lỗi hệ thống: ' + error.message, 'error');
+                    }
+                });
+        }
+
+        // Xử lý xác thực mạng xã hội (Google/Facebook)
+        function handleSocialAuth(providerType) {
+            let provider;
+            if (providerType === 'google') { provider = new firebase.auth.GoogleAuthProvider(); }
+            else if (providerType === 'facebook') { provider = new firebase.auth.FacebookAuthProvider(); }
+
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    const userData = { name: user.displayName || "Hội viên mới", email: user.email };
+                    localStorage.setItem('aura_current_user', JSON.stringify(userData));
+                    showToast('Đăng nhập kết nối thành công!', 'success');
+                    setTimeout(() => { window.location.href = './index.html'; }, 400);
+                })
+                .catch((error) => {
+                    showToast('Lỗi liên kết mạng xã hội!', 'error');
+                });
+        }
+    </script>
+</body>
+</html>
